@@ -56,7 +56,6 @@ export async function GET(request: NextRequest) {
             Authorization: `Bearer ${HACKATIME_API_TOKEN}`,
         };
 
-        // Lookup user by email
         const lookupUrl = `${HACKATIME_API_URL}/v1/users/lookup_email/${encodeURIComponent(
             email
         )}`;
@@ -90,7 +89,6 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Fetch user stats
         let statsUrl = `${HACKATIME_API_URL}/v1/users/${hackatimeId}/stats?features=projects`;
 
         if (startDate) {

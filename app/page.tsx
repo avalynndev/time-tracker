@@ -18,7 +18,7 @@ export default function MoonshotPage() {
   return (
     <main
       className={`${
-        isEmailSet ? "h-[240svh]" : "h-svh"
+        isEmailSet ? "h-[280svh]" : "h-svh"
       } overflow-hidden bg-[#130B2C] text-sand relative ${kavoon.variable}`}
       style={{ fontFamily: "var(--font-kavoon), cursive" }}
     >
