@@ -344,7 +344,7 @@ export default function MoonshotTracker({
                   }}
                 />
               </g>
-
+              {/* castle and meeple img are from siege */}
               <image
                 id="castleStart"
                 href="/castle-c90bfbb4.webp"
