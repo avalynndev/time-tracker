@@ -1,17 +1,141 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import {
+  fetchProjects,
+  formatHours,
+  calculateTotalHours,
+} from "@/lib/hackatime";
+import Image from "next/image";
 
-export default function SiegeTracker() {
-  const [hoursWorked, setHoursWorked] = useState(0);
-  const [minutesWorked, setMinutesWorked] = useState(0);
+interface Project {
+  name: string;
+  hours: number;
+}
+
+export default function MoonshotTracker({
+  onEmailStateChange,
+}: {
+  onEmailStateChange: (isSet: boolean) => void;
+}) {
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [isEmailSet, setIsEmailSet] = useState<boolean>(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(
+    new Set()
+  );
+  const [totalHours, setTotalHours] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [isLoadingFromStorage, setIsLoadingFromStorage] =
+    useState<boolean>(true);
   const MAX_HOURS = 75;
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const pathRef = useRef<SVGPathElement | null>(null);
 
-  const totalWorked = hoursWorked + minutesWorked / 60;
-  const percentage = Math.min((totalWorked / MAX_HOURS) * 100, 100);
-  const siegeComplete = totalWorked >= MAX_HOURS;
+  const START_DATE = "2025-10-14T00:00:00Z";
+
+  const percentage = Math.min((totalHours / MAX_HOURS) * 100, 100);
+  const moonshotComplete = totalHours >= MAX_HOURS;
+
+    useEffect(() => {
+    onEmailStateChange(isEmailSet);
+  }, [isEmailSet, onEmailStateChange]);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("hackatime-email");
+    if (savedEmail) {
+      setUserEmail(savedEmail);
+      setIsEmailSet(true);
+      fetchHackatimeData(savedEmail);
+    }
+    setIsLoadingFromStorage(false);
+  }, []);
+
+  const fetchHackatimeData = async (email?: string) => {
+    const emailToUse = email || userEmail;
+    if (!emailToUse) {
+      setError("Please enter your email");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await fetchProjects(emailToUse, START_DATE);
+
+      if (!data.data?.projects || !Array.isArray(data.data.projects)) {
+        throw new Error("No projects found in API response");
+      }
+
+      const projectsList: Project[] = data.data.projects.map(
+        (project: any) => ({
+          name: project.name,
+          hours: project.total_seconds / 3600,
+        })
+      );
+
+      setProjects(projectsList);
+
+      const allNames = new Set(projectsList.map((p) => p.name));
+      setSelectedProjects(allNames);
+
+      const selectedData = projectsList.filter((p) => allNames.has(p.name));
+
+      const total = calculateTotalHours(selectedData);
+      setTotalHours(total);
+    } catch (err) {
+      setError(
+        "Failed to fetch HackaTime data. Please check your email and try again."
+      );
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSubmit = () => {
+    if (!userEmail) {
+      setError("Please enter your email");
+      return;
+    }
+
+    localStorage.setItem("hackatime-email", userEmail);
+    setIsEmailSet(true);
+    fetchHackatimeData(userEmail);
+  };
+
+  useEffect(() => {
+    if (projects.length === 0 || selectedProjects.size === 0) {
+      setTotalHours(0);
+      return;
+    }
+
+    const selectedProjectsData = projects.filter((p) =>
+      selectedProjects.has(p.name)
+    );
+    const total = calculateTotalHours(selectedProjectsData);
+    setTotalHours(total);
+  }, [selectedProjects, projects]);
+
+  const toggleProject = (projectName: any) => {
+    const newSelected = new Set(selectedProjects);
+    if (newSelected.has(projectName)) {
+      newSelected.delete(projectName);
+    } else {
+      newSelected.add(projectName);
+    }
+    setSelectedProjects(newSelected);
+  };
+
+  const selectAllProjects = () => {
+    setSelectedProjects(new Set(projects.map((p) => p.name)));
+  };
+
+  const deselectAllProjects = () => {
+    setSelectedProjects(new Set());
+  };
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -107,27 +231,73 @@ export default function SiegeTracker() {
     }
   }, [percentage]);
 
-  const addTime = () => {
-    let totalMinutes = hoursWorked * 60 + minutesWorked + 15; // add 15 min
-    setHoursWorked(Math.floor(totalMinutes / 60));
-    setMinutesWorked(totalMinutes % 60);
+  const reset = () => {
+    setTotalHours(0);
+    setProjects([]);
+    setSelectedProjects(new Set());
+    setIsEmailSet(false);
+    setUserEmail("");
+    localStorage.removeItem("hackatime-email");
   };
 
-  const reset = () => {
-    setHoursWorked(0);
-    setMinutesWorked(0);
-  };
+  if (!isEmailSet) {
+    return (
+      <main className="flex items-center absolute top-100 font-(--font-kavoon) z-280">
+        <div className="max-w-md w-full rounded-2xl border border-white/30 p-8 shadow-lg text-center bg-background/50 backdrop-blur-3xl">
+          <h1 className="flex justify-center items-center gap-2 text-4xl mb-2 text-center">
+            <Image
+              src="/moonpheus-nosticker.webp"
+              alt="Moon"
+              width={40}
+              height={40}
+              className="h-auto z-0 opacity-90"
+            />
+            Tracker
+          </h1>
+
+          <p className="text-white/70 mb-6">
+            Track your hackathon coding journey to 75 hours!
+          </p>
+
+          <input
+            type="email"
+            value={userEmail}
+            onChange={(e) => setUserEmail(e.target.value)}
+            placeholder="Enter your email"
+            className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/60 mb-4 focus:outline-none focus:ring-2 focus:ring-white/70"
+          />
+
+          {error && <div className="text-red-400 text-sm mb-4">{error}</div>}
+
+          <button
+            onClick={handleEmailSubmit}
+            disabled={loading || !userEmail}
+            className="w-full font-kavoon uppercase tracking-wide text-white bg-black/70 hover:bg-black/80 transition px-6 py-3 rounded-lg border-2 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-2 ring-black/30"
+          >
+            {loading ? "Loading..." : "Start Tracking 🌕"}
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
+    <div className="min-h-screen p-6 absolute top-80 font-(--font-kavoon) text-center">
+      <button
+        onClick={() => fetchHackatimeData()}
+        disabled={loading}
+        className="fixed top-4 right-4 z-50 font-kavoon uppercase tracking-wide text-white bg-black/70 hover:bg-black/80 transition px-4 py-2 rounded-lg border-2 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-2 ring-black/30"
+      >
+        {loading ? "..." : "🔄 Refresh"}
+      </button>
       <div className="max-w-5xl mx-auto">
-        <div className="text-center text-4xl text-amber-800 mb-6">
-          {siegeComplete
-            ? "🏰 You've conquered the castle!"
-            : `⚔️ ${percentage.toFixed(1)}% of the way there!`}
+        <div className="text-center text-4xl font-bold mb-8">
+          {moonshotComplete
+            ? "🌕 Mission Accomplished!"
+            : `🚀 ${percentage.toFixed(1)}% of the way there!`}
         </div>
 
-        <div className="relative w-full flex justify-center">
+        <div className="relative w-full flex justify-center mb-8">
           <svg
             ref={svgRef}
             className="home-wave w-full max-w-5xl h-[340px]"
@@ -157,7 +327,7 @@ export default function SiegeTracker() {
             <g id="waveGroup">
               <use
                 href="#wavePath"
-                className="fill-none stroke-amber-400/40"
+                className="fill-none stroke-white/30"
                 strokeDasharray="20 14"
                 strokeLinecap="round"
                 strokeWidth="8"
@@ -165,10 +335,13 @@ export default function SiegeTracker() {
               <g clipPath="url(#completedClip)">
                 <use
                   href="#wavePath"
-                  className="fill-none stroke-amber-800"
+                  className="fill-none stroke-white"
                   strokeDasharray="20 14"
                   strokeLinecap="round"
                   strokeWidth="8"
+                  style={{
+                    filter: "drop-shadow(0 0 8px rgba(255,255,255,0.8))",
+                  }}
                 />
               </g>
 
@@ -208,63 +381,75 @@ export default function SiegeTracker() {
             </g>
           </svg>
         </div>
-        <div className="mt-10 bg-white/80 backdrop-blur border-2 border-amber-200 rounded-2xl shadow-xl p-8">
-          <h2
-            className="text-3xl font-bold text-amber-900 text-center mb-6"
-            style={{ fontFamily: "Georgia, serif" }}
-          >
-            Add Time
-          </h2>
 
-          <div className="flex items-center justify-center gap-6 mb-6">
-            <div className="text-center">
-              <label className="block text-amber-700 mb-2 font-medium">
-                Hours
-              </label>
-              <input
-                type="number"
-                min="0"
-                max={MAX_HOURS}
-                value={hoursWorked}
-                onChange={(e) => setHoursWorked(Number(e.target.value))}
-                className="w-24 text-center text-3xl font-bold border-2 border-amber-300 rounded-lg p-2 focus:outline-none focus:border-amber-500"
-              />
+        {projects.length > 0 && (
+          <div className="bg-white/10 border border-white/30 rounded-2xl backdrop-blur-md p-8 mb-6 shadow-lg">
+            <h2 className="text-3xl mb-4">Select Projects</h2>
+            <p className="text-center text-white/60 mb-4">
+              Choose which projects to track (since Oct 14, 2024)
+            </p>
+
+            <div className="flex justify-center gap-3 mb-4">
+              <button
+                onClick={selectAllProjects}
+                className="font-kavoon uppercase tracking-wide text-white bg-black/70 hover:bg-black/80 transition px-4 py-2 rounded-lg border-2 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-2 ring-black/30"
+              >
+                Select All
+              </button>
+              <button
+                onClick={deselectAllProjects}
+                className="font-kavoon uppercase tracking-wide text-white bg-black/70 hover:bg-black/80 transition px-4 py-2 rounded-lg border-2 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-2 ring-black/30"
+              >
+                Deselect All
+              </button>
             </div>
-            <div className="text-center">
-              <label className="block text-amber-700 mb-2 font-medium">
-                Minutes
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={minutesWorked}
-                onChange={(e) => setMinutesWorked(Number(e.target.value))}
-                className="w-24 text-center text-3xl font-bold border-2 border-amber-300 rounded-lg p-2 focus:outline-none focus:border-amber-500"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
+              {projects.map((project) => (
+                <label
+                  key={project.name}
+                  className="flex items-center gap-2 p-3 border border-white/30 rounded-lg bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedProjects.has(project.name)}
+                    onChange={() => toggleProject(project.name)}
+                    className="w-5 h-5 accent-white"
+                  />
+
+                  <span className="truncate">{project.name}</span>
+
+                  <span className="text-sm text-white/70 ml-auto">
+                    {formatHours(project.hours)}
+                  </span>
+                </label>
+              ))}
             </div>
+          </div>
+        )}
+
+        <div className="bg-white/10 border border-white/30 rounded-2xl backdrop-blur-md p-8 shadow-lg">
+          <h2 className="text-3xl mb-6">Your Progress</h2>
+
+          <div className="text-2xl mb-4">
+            {totalHours === 0
+              ? "You haven't started yet!"
+              : `${formatHours(totalHours)} logged!`}
+          </div>
+
+          <div className="text-white/70 mb-6">
+            {selectedProjects.size} project
+            {selectedProjects.size !== 1 ? "s" : ""} selected
           </div>
 
           <div className="flex justify-center gap-4">
             <button
-              onClick={addTime}
-              className="px-8 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg shadow-md transition-transform hover:scale-110 active:scale-95"
-            >
-              +15 min
-            </button>
-            <button
               onClick={reset}
-              className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-md transition-transform hover:scale-110 active:scale-95"
+              className="font-kavoon uppercase tracking-wide text-white bg-black/70 hover:bg-black/80 transition px-6 py-2 rounded-lg border-2 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-2 ring-black/30"
             >
-              Reset
+              🔒 Reset & Change Email
             </button>
           </div>
-        </div>
-
-        <div className="text-center mt-8 text-2xl text-amber-900">
-          {totalWorked === 0
-            ? "You haven't started yet!"
-            : `${hoursWorked}h ${minutesWorked}m logged!`}
         </div>
       </div>
     </div>
