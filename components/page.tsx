@@ -33,7 +33,7 @@ export default function MoonshotTracker({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const pathRef = useRef<SVGPathElement | null>(null);
 
-  const START_DATE = "2025-10-10T00:00:00Z";
+  const START_DATE = "2025-10-7T00:00:00Z";
 
   const percentage = Math.min((totalHours / MAX_HOURS) * 100, 100);
   const moonshotComplete = totalHours >= MAX_HOURS;
