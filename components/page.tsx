@@ -386,7 +386,7 @@ export default function MoonshotTracker({
           <div className="bg-white/10 border border-white/30 rounded-2xl backdrop-blur-md p-8 mb-6 shadow-lg">
             <h2 className="text-3xl mb-4">Select Projects</h2>
             <p className="text-center text-white/60 mb-4">
-              Choose which projects to track (since Oct 1oth, 2025)
+              Choose which projects to track (since Oct 7th, 2025)
             </p>
 
             <div className="flex justify-center gap-3 mb-4">
