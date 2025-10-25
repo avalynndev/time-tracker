@@ -25,7 +25,7 @@ export interface HackatimeStatsResponse {
 
 export async function fetchProjects(
   email: string,
-  startDate?: string | null
+  startDate?: string | null,
 ): Promise<HackatimeStatsResponse> {
   try {
     const params = new URLSearchParams({ email });
@@ -39,7 +39,9 @@ export async function fetchProjects(
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`,
+      );
     }
 
     const statsData: HackatimeStatsResponse = await response.json();

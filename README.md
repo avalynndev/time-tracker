@@ -58,3 +58,11 @@ By following these steps, you can host the Moonshot Time Tracker web app on your
 
 - This project has lot of inspiration from siege, none of the code is copied from siege though. Except the images and svg.
 - This project was made for moonshot hackthon.
+
+<div align="center">
+  <a href="https://moonshot.hackclub.com" target="_blank">
+    <img src="https://hc-cdn.hel1.your-objectstorage.com/s/v3/35ad2be8c916670f3e1ac63c1df04d76a4b337d1_moonshot.png" 
+         alt="This project is part of Moonshot, a 4-day hackathon in Florida visiting Kennedy Space Center and Universal Studios!" 
+         style="width: 100%;">
+  </a>
+</div>

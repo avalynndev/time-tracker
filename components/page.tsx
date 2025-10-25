@@ -21,7 +21,7 @@ export default function MoonshotTracker({
   const [isEmailSet, setIsEmailSet] = useState<boolean>(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [totalHours, setTotalHours] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
@@ -38,7 +38,7 @@ export default function MoonshotTracker({
   const percentage = Math.min((totalHours / MAX_HOURS) * 100, 100);
   const moonshotComplete = totalHours >= MAX_HOURS;
 
-    useEffect(() => {
+  useEffect(() => {
     onEmailStateChange(isEmailSet);
   }, [isEmailSet, onEmailStateChange]);
 
@@ -73,7 +73,7 @@ export default function MoonshotTracker({
         (project: any) => ({
           name: project.name,
           hours: project.total_seconds / 3600,
-        })
+        }),
       );
 
       setProjects(projectsList);
@@ -87,7 +87,7 @@ export default function MoonshotTracker({
       setTotalHours(total);
     } catch (err) {
       setError(
-        "Failed to fetch HackaTime data. Please check your email and try again."
+        "Failed to fetch HackaTime data. Please check your email and try again.",
       );
       console.error(err);
     } finally {
@@ -113,7 +113,7 @@ export default function MoonshotTracker({
     }
 
     const selectedProjectsData = projects.filter((p) =>
-      selectedProjects.has(p.name)
+      selectedProjects.has(p.name),
     );
     const total = calculateTotalHours(selectedProjectsData);
     setTotalHours(total);
@@ -182,7 +182,7 @@ export default function MoonshotTracker({
 
         userMarkerEl.setAttribute(
           "transform",
-          `rotate(${angle} ${feetX} ${feetY})`
+          `rotate(${angle} ${feetX} ${feetY})`,
         );
       }
     }
@@ -209,7 +209,7 @@ export default function MoonshotTracker({
       const rectX = Math.min(minX, curr.x) - strokePad;
       const rectW = Math.max(
         0,
-        Math.max(maxX, curr.x) + strokePad * 0.25 - rectX
+        Math.max(maxX, curr.x) + strokePad * 0.25 - rectX,
       );
 
       completedRectEl.setAttribute("x", rectX.toString());
@@ -226,7 +226,7 @@ export default function MoonshotTracker({
         "viewBox",
         `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${
           bbox.height + pad * 2
-        }`
+        }`,
       );
     }
   }, [percentage]);
